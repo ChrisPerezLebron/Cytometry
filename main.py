@@ -101,7 +101,7 @@ def load_data_from_csv(cursor, file_path):
     # Extract unique reference entities
     projects = {row['project'] for row in rows}
     conditions = {row['condition'] for row in rows}
-    treatments = {row['treatment'] for row in rows}
+    treatments = {row['treatment'] for row in rows if row['treatment'] != 'none'}
     
     # Insert reference data
     cursor.executemany(
