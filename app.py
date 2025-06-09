@@ -4,12 +4,6 @@ import os
 import csv
 from flask import Flask
 
-app = Flask(__name__)
-
-@app.route('/')
-def hello_world():
-    return 'Hello, World!'
-
 def create_database(cursor):
     """Create database if not exists"""
     try:
@@ -195,37 +189,44 @@ def load_data_from_csv(cursor, file_path):
                 int(row['monocyte'])
             )
         )
-if __name__ == "__main__":
-    csv_path = 'cell-count.csv'
 
-    if not os.path.exists(csv_path):
-        print(f"Error: File not found at {csv_path}")
-        exit(1)
+csv_path = 'cell-count.csv'
 
-    try:
-        # Establish connection to db using username and password provided in the .env file
-        db = mysql.connector.connect(host="localhost", user=os.getenv("DB_USER"), passwd=os.getenv("DB_PASS"))
-        # Get cursor
-        cursor = db.cursor()
-        
-        # Create database and tables
-        create_database(cursor)
-        create_tables(cursor)
-        
-        # Load CSV data
-        load_data_from_csv(cursor, csv_path)
-        db.commit()
-        
-        print("Data loaded successfully!")
-        
-        # Verify record counts
-        cursor.execute("SELECT COUNT(*) FROM Subject")
-        print(f"Subjects loaded: {cursor.fetchone()[0]}")
-        
-        cursor.execute("SELECT COUNT(*) FROM Sample")
-        print(f"Samples loaded: {cursor.fetchone()[0]}")
-        
-    except mysql.connector.Error as err:
-        print(f"Database error: {err}")
-        db.rollback()
+if not os.path.exists(csv_path):
+    print(f"Error: File not found at {csv_path}")
+    exit(1)
 
+try:
+    # Establish connection to db using username and password provided in the .env file
+    db = mysql.connector.connect(host="localhost", user=os.getenv("DB_USER"), passwd=os.getenv("DB_PASS"))
+    # Get cursor
+    cursor = db.cursor()
+    
+    # Create database and tables
+    create_database(cursor)
+    create_tables(cursor)
+    
+    # Load CSV data
+    load_data_from_csv(cursor, csv_path)
+    db.commit()
+    
+    print("Data loaded successfully!")
+    
+    # Verify record counts
+    cursor.execute("SELECT COUNT(*) FROM Subject")
+    print(f"Subjects loaded: {cursor.fetchone()[0]}")
+    
+    cursor.execute("SELECT COUNT(*) FROM Sample")
+    print(f"Samples loaded: {cursor.fetchone()[0]}")
+    
+except mysql.connector.Error as err:
+    print(f"Database error: {err}")
+    db.rollback()
+
+
+
+app = Flask(__name__)
+
+@app.route('/')
+def hello_world():
+    return 'Hello, World!'
