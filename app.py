@@ -2,6 +2,13 @@ import mysql.connector
 from mysql.connector import errorcode
 import os
 import csv
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route('/')
+def hello_world():
+    return 'Hello, World!'
 
 def create_database(cursor):
     """Create database if not exists"""
