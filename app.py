@@ -18,62 +18,40 @@ def create_tables(cursor):
     """Create database tables"""
     tables = [
         """
-        CREATE TABLE IF NOT EXISTS Project (
-            project_id VARCHAR(50) PRIMARY KEY
+        CREATE TABLE IF NOT EXISTS Treatments (
+            treatment_id INT PRIMARY KEY,
+            treatment_name VARCHAR(50) NOT NULL, 
+            time_from_treatment_start INT not NULL, 
+            response ENUM('Y', 'N')
         ) ENGINE=InnoDB
         """,
         """
-        CREATE TABLE IF NOT EXISTS DiseaseCondition (  
-            condition_name VARCHAR(50) PRIMARY KEY
-        ) ENGINE=InnoDB
-        """,
-        """
-        CREATE TABLE IF NOT EXISTS Treatment (
-            treatment_id VARCHAR(50) PRIMARY KEY
-        ) ENGINE=InnoDB
-        """,
-        """
-        CREATE TABLE IF NOT EXISTS Subject (
+        CREATE TABLE IF NOT EXISTS Samples (
+            sample_id INT PRIMARY KEY,
             project_id VARCHAR(50) NOT NULL,
-            subject_id VARCHAR(50) NOT NULL,
-            condition_name VARCHAR(50) NOT NULL,
-            treatment_id VARCHAR(50),
-            age INT NOT NULL,
-            sex ENUM('M', 'F') NOT NULL,
-            PRIMARY KEY (project_id, subject_id),
-            FOREIGN KEY (project_id) REFERENCES Project(project_id),
-            FOREIGN KEY (condition_name) REFERENCES DiseaseCondition(condition_name),  
-            FOREIGN KEY (treatment_id) REFERENCES Treatment(treatment_id)
-        ) ENGINE=InnoDB
-        """,
-        
-        """
-        CREATE TABLE IF NOT EXISTS Sample (
-            sample_id VARCHAR(50) PRIMARY KEY,
-            project_id VARCHAR(50) NOT NULL,
-            subject_id VARCHAR(50) NOT NULL,
-            sample_type VARCHAR(50) NOT NULL,
-            time_from_treatment_start INT,
-            response ENUM('y', 'n'),
-            FOREIGN KEY (project_id, subject_id) 
-                REFERENCES Subject(project_id, subject_id)
-        ) ENGINE=InnoDB
-        """,
-        
-        """
-        CREATE TABLE IF NOT EXISTS CellCount (
-            sample_id VARCHAR(50) PRIMARY KEY,
+            sample_type VARCHAR(50),
             b_cell INT NOT NULL,
-            cd8_t_cell INT NOT NULL,
-            cd4_t_cell INT NOT NULL,
-            nk_cell INT NOT NULL,
+            cd8_t_cell INT NOT NULL, 
+            cd4_t_cell INT NOT NULL, 
+            nk_cell INT NOT NULL, 
             monocyte INT NOT NULL,
-            FOREIGN KEY (sample_id) REFERENCES Sample(sample_id),
             CHECK (b_cell >= 0),
             CHECK (cd8_t_cell >= 0),
             CHECK (cd4_t_cell >= 0),
             CHECK (nk_cell >= 0),
             CHECK (monocyte >= 0)
+        ) ENGINE=InnoDB 
+        """, 
+        """
+        CREATE TABLE IF NOT EXISTS Subjects (
+            subject_id INT PRIMARY KEY, 
+            condition_name VARCHAR(50) NOT NULL,
+            age INT NOT NULL,
+            sex ENUM('M', 'F') NOT NULL,
+            sample_id INT NOT NULL,
+            treatment_id INT NOT NULL,
+            FOREIGN KEY (sample_id) REFERENCES Samples(sample_id),  
+            FOREIGN KEY (treatment_id) REFERENCES Treatments(treatment_id)
         ) ENGINE=InnoDB
         """
     ]
