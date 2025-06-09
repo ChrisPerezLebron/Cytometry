@@ -28,7 +28,7 @@ def create_tables(cursor):
         """
         CREATE TABLE IF NOT EXISTS Samples (
             sample_id INT PRIMARY KEY,
-            project_id VARCHAR(50) NOT NULL,
+            project VARCHAR(50) NOT NULL,
             sample_type VARCHAR(50),
             b_cell INT NOT NULL,
             cd8_t_cell INT NOT NULL, 
@@ -76,97 +76,56 @@ def load_data_from_csv(cursor, file_path):
     with open(file_path, 'r', encoding='utf-8-sig') as f:
         reader = csv.DictReader(f)
         rows = list(reader)
-    
-    # Extract unique reference entities
-    projects = {row['project'] for row in rows}
-    conditions = {row['condition'] for row in rows}
-    treatments = {row['treatment'] for row in rows if row['treatment'] != 'none'}
-    
-    # Insert reference data
-    cursor.executemany(
-        "INSERT IGNORE INTO Project (project_id) VALUES (%s)",
-        [(p,) for p in projects]
-    )
-    cursor.executemany(
-        "INSERT IGNORE INTO DiseaseCondition (condition_name) VALUES (%s)",
-        [(c,) for c in conditions]
-    )
-    cursor.executemany(
-        "INSERT IGNORE INTO Treatment (treatment_id) VALUES (%s)",
-        [(t,) for t in treatments]
-    )
+
     
     # Track inserted subjects to avoid duplicates
-    inserted_subjects = set()
+    inserted_samples = {}
+    inserted_treatments = {}  
+    inserted_subjects = {}
+    
+
     
     for row in rows:
-        # Prepare subject key
-        subj_key = (row['project'], row['subject'])
-        
-        # Insert subject if new
-        if subj_key not in inserted_subjects:
+
+        if row['sample'] not in inserted_samples: 
+            #push sample to database 
             cursor.execute(
                 """
-                INSERT INTO Subject (
-                    project_id, subject_id, condition_name, 
-                    treatment_id, age, sex
-                ) VALUES (%s, %s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE
-                    condition_name = VALUES(condition_name),
-                    treatment_id = VALUES(treatment_id),
-                    age = VALUES(age),
-                    sex = VALUES(sex)
+                INSERT INTO
+                Samples (
+                    sample_id,
+                    project,
+                    sample_type,
+                    b_cell,
+                    cd8_t_cell,
+                    cd4_t_cell,
+                    nk_cell,
+                    monocyte
+                )
+                VALUES
+                (%s, %s, %s, %s, %s, %s, %s, %s)
                 """,
                 (
+                    int(row['sample'].replace("s", "")),
                     row['project'],
-                    row['subject'],
-                    row['condition'],
-                    row['treatment'] if row['treatment'] != 'none' else None,
-                    int(row['age']),
-                    row['sex']
+                    row['sample_type'],
+                    int(row['b_cell']),
+                    int(row['cd8_t_cell']),
+                    int(row['cd4_t_cell']), 
+                    int(row['nk_cell']), 
+                    int(row['monocyte']),
                 )
             )
-            inserted_subjects.add(subj_key)
+
+            # Add sample to inserted samples 
+            inserted_samples.add(row['sample'])
+        if row['treatment'] not in treatments: 
+            treatments[row['treatment']] = [
+                
+            ]
+            #push treatment to database
+
         
-        # Handle nullable fields
-        time_val = int(row['time_from_treatment_start']) if row['time_from_treatment_start'] else None
-        response_val = row['response'] if row['response'] else None
-        
-        # Insert sample
-        cursor.execute(
-            """
-            INSERT INTO Sample (
-                sample_id, project_id, subject_id, 
-                sample_type, time_from_treatment_start, response
-            ) VALUES (%s, %s, %s, %s, %s, %s)
-            """,
-            (
-                row['sample'],
-                row['project'],
-                row['subject'],
-                row['sample_type'],
-                time_val,
-                response_val
-            )
-        )
-        
-        # Insert cell counts
-        cursor.execute(
-            """
-            INSERT INTO CellCount (
-                sample_id, b_cell, cd8_t_cell, 
-                cd4_t_cell, nk_cell, monocyte
-            ) VALUES (%s, %s, %s, %s, %s, %s)
-            """,
-            (
-                row['sample'],
-                int(row['b_cell']),
-                int(row['cd8_t_cell']),
-                int(row['cd4_t_cell']),
-                int(row['nk_cell']),
-                int(row['monocyte'])
-            )
-        )
 
 csv_path = 'cell-count.csv'
 
