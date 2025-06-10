@@ -27,7 +27,7 @@ def create_tables(cursor):
         """,
         """
         CREATE TABLE IF NOT EXISTS Treatments (
-            treatment_id INT PRIMARY KEY,
+            treatment_id INT AUTO_INCREMENT PRIMARY KEY,
             treatment_name VARCHAR(50), 
             time_from_treatment_start INT, 
             response ENUM('Y', 'N'),
@@ -138,19 +138,17 @@ def load_data_from_csv(cursor, file_path):
         #push treatment to database
         cursor.execute(
             """
-            INSERT IGNORE INTO
+            INSERT INTO
             Treatments (
-                treatment_id,
                 treatment_name,
                 time_from_treatment_start, 
                 response,
                 subject_id
             )
             VALUES
-            (%s, %s, %s, %s, %s)
+            (%s, %s, %s, %s)
             """,
             (
-                int(row['subject'].replace("sbj", "")),
                 row['treatment'] if row['treatment'] != 'none' else None, 
                 int(row['time_from_treatment_start']) if row['time_from_treatment_start'] else None,
                 row['response'].upper() if row['response'] else None,
