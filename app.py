@@ -18,11 +18,21 @@ def create_tables(cursor):
     """Create database tables"""
     tables = [
         """
+        CREATE TABLE IF NOT EXISTS Subjects (
+            subject_id INT PRIMARY KEY, 
+            condition_name VARCHAR(50) NOT NULL,
+            age INT NOT NULL,
+            sex ENUM('M', 'F') NOT NULL
+        ) ENGINE=InnoDB
+        """,
+        """
         CREATE TABLE IF NOT EXISTS Treatments (
             treatment_id INT PRIMARY KEY,
-            treatment_name VARCHAR(50) NOT NULL, 
-            time_from_treatment_start INT not NULL, 
-            response ENUM('Y', 'N')
+            treatment_name VARCHAR(50), 
+            time_from_treatment_start INT, 
+            response ENUM('Y', 'N'),
+            subject_id INT NOT NULL,
+            FOREIGN KEY (subject_id) REFERENCES Subjects(subject_id)
         ) ENGINE=InnoDB
         """,
         """
@@ -35,24 +45,14 @@ def create_tables(cursor):
             cd4_t_cell INT NOT NULL, 
             nk_cell INT NOT NULL, 
             monocyte INT NOT NULL,
+            subject_id INT NOT NULL,
+            FOREIGN KEY (subject_id) REFERENCES Subjects(subject_id),
             CHECK (b_cell >= 0),
             CHECK (cd8_t_cell >= 0),
             CHECK (cd4_t_cell >= 0),
             CHECK (nk_cell >= 0),
             CHECK (monocyte >= 0)
         ) ENGINE=InnoDB 
-        """, 
-        """
-        CREATE TABLE IF NOT EXISTS Subjects (
-            subject_id INT PRIMARY KEY, 
-            condition_name VARCHAR(50) NOT NULL,
-            age INT NOT NULL,
-            sex ENUM('M', 'F') NOT NULL,
-            sample_id INT NOT NULL,
-            treatment_id INT NOT NULL,
-            FOREIGN KEY (sample_id) REFERENCES Samples(sample_id),  
-            FOREIGN KEY (treatment_id) REFERENCES Treatments(treatment_id)
-        ) ENGINE=InnoDB
         """
     ]
     
@@ -78,53 +78,86 @@ def load_data_from_csv(cursor, file_path):
         rows = list(reader)
 
     
-    # Track inserted subjects to avoid duplicates
-    inserted_samples = {}
-    inserted_treatments = {}  
-    inserted_subjects = {}
-    
 
     
     for row in rows:
-
-        if row['sample'] not in inserted_samples: 
-            #push sample to database 
-            cursor.execute(
-                """
-                INSERT INTO
-                Samples (
-                    sample_id,
-                    project,
-                    sample_type,
-                    b_cell,
-                    cd8_t_cell,
-                    cd4_t_cell,
-                    nk_cell,
-                    monocyte
-                )
-                VALUES
-                (%s, %s, %s, %s, %s, %s, %s, %s)
-                """,
-                (
-                    int(row['sample'].replace("s", "")),
-                    row['project'],
-                    row['sample_type'],
-                    int(row['b_cell']),
-                    int(row['cd8_t_cell']),
-                    int(row['cd4_t_cell']), 
-                    int(row['nk_cell']), 
-                    int(row['monocyte']),
-                )
+        print(f'processing row: {row}')
+        #push subject to database
+        cursor.execute(
+            """
+            INSERT IGNORE INTO
+            Subjects (
+                subject_id,
+                condition_name,
+                age, 
+                sex
             )
-
-            # Add sample to inserted samples 
-            inserted_samples.add(row['sample'])
-        if row['treatment'] not in treatments: 
-            treatments[row['treatment']] = [
+            VALUES
+            (%s, %s, %s, %s)
+            """,
+            (
+                int(row['subject'].replace("sbj", "")),
+                row['condition'], 
+                int(row['age']),
+                row['sex']
                 
-            ]
-            #push treatment to database
+            )
+        )
 
+        #push sample to database 
+        cursor.execute(
+            """
+            INSERT INTO
+            Samples (
+                sample_id,
+                project,
+                sample_type,
+                b_cell,
+                cd8_t_cell,
+                cd4_t_cell,
+                nk_cell,
+                monocyte,
+                subject_id
+            )
+            VALUES
+            (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                int(row['sample'].replace("s", "")),
+                row['project'],
+                row['sample_type'],
+                int(row['b_cell']),
+                int(row['cd8_t_cell']),
+                int(row['cd4_t_cell']), 
+                int(row['nk_cell']), 
+                int(row['monocyte']),
+                int(row['subject'].replace("sbj", ""))
+            )
+        )
+      
+        #push treatment to database
+        cursor.execute(
+            """
+            INSERT IGNORE INTO
+            Treatments (
+                treatment_id,
+                treatment_name,
+                time_from_treatment_start, 
+                response,
+                subject_id
+            )
+            VALUES
+            (%s, %s, %s, %s, %s)
+            """,
+            (
+                int(row['subject'].replace("sbj", "")),
+                row['treatment'] if row['treatment'] != 'none' else None, 
+                int(row['time_from_treatment_start']) if row['time_from_treatment_start'] else None,
+                row['response'].upper() if row['response'] else None,
+                int(row['subject'].replace("sbj", ""))
+                
+            )
+        )
         
 
 csv_path = 'cell-count.csv'
@@ -150,12 +183,13 @@ try:
     print("Data loaded successfully!")
     
     # Verify record counts
-    cursor.execute("SELECT COUNT(*) FROM Subject")
+    cursor.execute("SELECT COUNT(*) FROM Subjects")
     print(f"Subjects loaded: {cursor.fetchone()[0]}")
     
-    cursor.execute("SELECT COUNT(*) FROM Sample")
+    cursor.execute("SELECT COUNT(*) FROM Samples")
     print(f"Samples loaded: {cursor.fetchone()[0]}")
     
+    db.close()
 except mysql.connector.Error as err:
     print(f"Database error: {err}")
     db.rollback()
