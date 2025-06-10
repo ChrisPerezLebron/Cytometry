@@ -18,7 +18,8 @@ body {
     font-family: 'Open Sans', sans-serif;
 }
 .table-wrapper {
-    width: 700px;
+    width: 100%; /* changed from 700px */
+    overflow-x: auto; /* ensure scroll happens */
     margin: 30px auto;
     background: #fff;
     padding: 20px;	
@@ -98,6 +99,7 @@ table.table td .add {
 </style>
 <script>
 $(document).ready(function(){
+
 	$('[data-toggle="tooltip"]').tooltip();
 	var actions = $("table td:last-child").html();
 	// Append table with add row form on add new button click
@@ -152,7 +154,7 @@ $(document).ready(function(){
 </script>
 </head>
 <body>
-<div class="container-lg">
+<div class="container-fluid">
     <div class="table-responsive">
         <div class="table-wrapper">
             <div class="table-title">
@@ -166,9 +168,21 @@ $(document).ready(function(){
             <table class="table table-bordered">
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Department</th>
-                        <th>Phone</th>
+                        <th>Project</th>
+                        <th>Subject</th>
+                        <th>Condition</th>
+                        <th>Age</th>
+                        <th>Sex</th>
+                        <th>Treatment</th>
+                        <th>Response</th>
+                        <th>Sample</th>
+                        <th>Sample Type</th>
+                        <th>Time From Treament Start</th>
+                        <th>b_cell</th>
+                        <th>cd8_t_cell</th>
+                        <th>cd4_t_cell</th>
+                        <th>nk_cell</th>
+                        <th>monocyte</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
