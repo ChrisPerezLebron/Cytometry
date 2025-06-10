@@ -2,7 +2,7 @@ import mysql.connector
 from mysql.connector import errorcode
 import os
 import csv
-from flask import Flask
+from flask import Flask, render_template
 
 def create_database(cursor):
     """Create database if not exists"""
@@ -198,4 +198,4 @@ app = Flask(__name__)
 
 @app.route('/')
 def hello_world():
-    return 'Hello, World!'
+    return render_template("main.html")
